@@ -18,18 +18,6 @@ Data source: [TidyTuesday 2024-05-14](https://github.com/rfordatascience/tidytue
 ## Visualizations
 Include visualizations here to illustrate the insights. For example, bar charts showing age groups and their coffee consumption, pie charts for preferred coffee recipes, and a map or chart for favored coffee locations.
 
-### Example Visualization (Bar Chart)
-![Age Group vs Coffee Consumption](bar_chart.png)
-Caption: Bar chart showing coffee consumption by age group.
-
-### Example Visualization (Pie Chart)
-![Recommended Coffee Recipes](pie_chart.png)
-Caption: Pie chart illustrating recommended coffee recipes.
-
-### Example Visualization (Map or Chart)
-![Preferred Coffee Locations](map_chart.png)
-Caption: Map or chart depicting favored coffee locations.
-
 ## Conclusion
 Based on the survey data, we conclude that coffee consumption is highest among individuals aged 25-34 years. The top recommended coffee recipe is Pourover + Fruity + No - Just black + Medium + Light + Full caffeine. Additionally, enjoying coffee at home is the most favored location among respondents.
 
