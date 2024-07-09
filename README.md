@@ -22,3 +22,4 @@ Include visualizations here to illustrate the insights. For example, bar charts 
 Based on the survey data, we conclude that coffee consumption is highest among individuals aged 25-34 years. The top recommended coffee recipe is Pourover + Fruity + No - Just black + Medium + Light + Full caffeine. Additionally, enjoying coffee at home is the most favored location among respondents.
 
 For detailed analysis and more visualizations, please refer to the complete dataset and analysis in the provided [source](https://github.com/rfordatascience/tidytuesday/blob/master/data/2024/2024-05-14/readme.md).
+For detailed analysis in Rpubs [source](https://rpubs.com/senddimas/1201337)
