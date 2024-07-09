@@ -1,0 +1,367 @@
+---
+title: "Coffe Trend and Recipe"
+author: "Dimas Aditya"
+date:
+output: 
+  html_document:
+    theme: cerulean
+    toc: yes
+    toc_float:
+      collapsed: true
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Muat paket png
+library(png)
+
+# Baca gambar
+img <- readPNG("data_input/Coffe.png")
+
+left <- -1  # Sesuaikan dengan nilai yang lebih kecil
+right <- 2  # Sesuaikan dengan nilai yang lebih besar
+bottom <- -1  # Sesuaikan dengan nilai yang lebih kecil
+top <- 2  # Sesuaikan dengan nilai yang lebih besar
+
+# Tampilkan gambar dengan ukuran yang lebih besar
+plot.new()
+rasterImage(img, left, bottom, right, top,interpolate = FALSE)
+```
+
+#  Introduction
+Pada bulan Oktober 2023, James Hoffmann melakukan uji rasa secara langsung dengan sekitar 4.000 orang di AS. Sebulan kemudian, dia merilis data survei untuk uji rasa, setiap peserta dikirimkan empat sampel kopi tanpa label. Survey ini dapat memberikan gambaran gambaran menarik secara statistik untuk itu mari kita buatkan visualisasi statistik yang menarik.
+
+source: https://github.com/rfordatascience/tidytuesday/blob/master/data/2024/2024-05-14/readme.md
+
+### Business Question
+***1.Diumur berapa konsumsi coffe tertinggi ?***
+
+***2.Rekomendasi Coffe terbaik ?***
+
+***3.Dimana tempat menikmati Coffe paling favorit ?***
+
+
+
+
+## 1. Data Preparation
+### 1.1 Prerequisites
+### 1.2 Importing Libraries
+```{r}
+# for data wrangling
+library(lubridate)
+library(tidyr)
+# visualization
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(png)
+library(grid)
+library(prettydoc)
+library(rmarkdown)
+```
+
+## 1.3 Importing Dataset
+```{r}
+Coffe <- read.csv("data_input/Coffe.csv")
+```
+
+## 2. Data Processing
+### 2.1 Duplicates
+```{r}
+sum(duplicated(Coffe))
+```
+
+### 2.2 Missing Values
+```{r}
+sum(is.na(Coffe))
+```
+```{r}
+Coffe1 <- subset(Coffe, select = c(age, where_drink, cups, favorite, additions, style, strength, roast_level, caffeine))
+```
+
+```{r}
+Coffe1[Coffe1 == ""] <- NA
+```
+
+Mari kita chek kembali data yang sudah kita seleksi
+
+```{r}
+colSums(is.na(x = Coffe1))
+```
+
+
+```{r}
+colSums(is.na(x = Coffe1))
+```
+
+```{r}
+Coffe2 <- Coffe1 %>%
+  drop_na()
+```
+
+
+### 2.3 Data Types
+Untuk mempermudah pengolahannya mari kita rubah dulu seluruh data character menjadi factor dalam kolom yang sudah di seleksi
+
+```{r}
+summary(Coffe2)
+```
+
+```{r}
+str(Coffe2)
+```
+
+## 3. Exploratory Data Analysis
+
+```{r}
+Coffe3 <- Coffe2 %>%
+  mutate(across(where(is.character), as.factor))
+```
+
+### 3.1 Umur penikmat coffe tertinggi
+
+```{r}
+oage <- Coffe3 %>%
+group_by(age) %>%
+  summarise(total = n()) %>% 
+  arrange(desc(total))
+oage
+```
+
+### 3.2 Melihat resep terbaik untuk semua umur
+
+```{r}
+allrecipe <- Coffe3 %>%
+group_by(favorite, style, additions, strength, roast_level, caffeine) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  ungroup() %>% head(5)
+allrecipe
+```
+Berdasarkan tabel diatas kita bisa menyimpulkan Pourover + Fruity + No - Just black + Medium + Light + Full caffeine adalah yang paling favorit untuk semua kalangan.
+
+
+
+Mari kita buatkan resep terbaik untuk masing masing umur
+melakukan agregasi
+```{r}
+age <- Coffe3 %>%
+group_by(age, favorite, style, additions, strength, roast_level, caffeine) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  ungroup() 
+age
+```
+Mengelompokan data berdasarkan umur
+```{r}
+agerecipe<- age %>%
+  group_by(age) %>%
+  slice_max(order_by = count, n = 1) %>%
+  arrange(desc(count)) %>%
+  ungroup() %>% head(5)
+agerecipe
+```
+Merubah tampilan berdasarkan jumlah peminat dan resep
+```{r}
+x <- data.frame(
+  age = c("25-34 years old", "35-44 years old", "18-24 years old", "45-54 years old", "55-64 years old"),
+  favorite = c("Pourover", "Pourover", "Pourover", "Pourover", "Pourover"),
+  style = c("Fruity", "Fruity", "Fruity", "Fruity", "Fruity"),
+  additions = c("No - just black", "No - just black", "No - just black", "No - just black", "No - just black"),
+  strength = c("Medium", "Medium", "Somewhat strong", "Somewhat strong", "Somewhat strong"),
+  roast_level = c("Light", "Light", "Light", "Light", "Light"),
+  caffeine = c("Full caffeine", "Full caffeine", "Full caffeine", "Full caffeine", "Full caffeine"),
+  count = c(72, 36, 15, 6, 6)
+)
+
+# Menggabungkan nilai dari kolom-kolom kecuali age dan count menjadi satu kolom 'details'
+age_united <- x %>%
+  unite("recipe", -c(age, count), sep = ", ")
+age_united
+```
+
+
+### 3.3 Melihat data berdasarkan tempat terbaik 
+
+Mari kita lihat kembali data Coffe 3
+```{r}
+Coffe3 %>%  head(5)
+```
+Untuk menikmati coffe lebih baik selain resep terkadang tempat ikut mempengaruhi kenikmatan tersebut.Mari kita lihat dalam bentuk boxplot untuk melihat susunan datanya
+```{r}
+boxplot(Coffe3$where_drink)
+```
+Dari bentuk boxplot diatas terdapat banyak sekali variasi datanya, mari kita perbaiki untuk mendapatkan data yang lebih relevan
+
+```{r}
+data <- c(
+  "At a cafe                           63",
+  "At a cafe, At home            80",
+  "At a cafe, At home, At the office            16",
+  "At a cafe, At home, At the office, On the go                5",
+  "At a cafe, At home, On the go            14",
+  "At a cafe, At home, On the go, At the office            6",
+  "At a cafe, At the office            4",
+  "At a cafe, At the office, At home            18",
+  "At a cafe, At the office, At home, On the go            3",
+  "At a cafe, At the office, On the go            1",
+  "At a cafe, On the go, At home            6",
+  "At a cafe, On the go, At home, At the office            3",
+  "At a cafe, On the go, At the office            1",
+  "At home            1558",
+  "At home, At a cafe            405",
+  "At home, At a cafe, At the office            47",
+  "At home, At a cafe, At the office, On the go            8",
+  "At home, At a cafe, On the go            35",
+  "At home, At a cafe, On the go, At the office            20",
+  "At home, At the office            389",
+  "At home, At the office, At a cafe            76",
+  "At home, At the office, At a cafe, On the go            18",
+  "At home, At the office, None of these            1",
+  "At home, At the office, On the go            45",
+  "At home, At the office, On the go, At a cafe            23",
+  "At home, None of these            1",
+  "At home, On the go            118",
+  "At home, On the go, At a cafe            33",
+  "At home, On the go, At a cafe, At the office            14",
+  "At home, On the go, At the office            40",
+  "At home, On the go, None of these            1",
+  "At the office            135",
+  "At the office, At a cafe            10",
+  "At the office, At a cafe, At home            18",
+  "At the office, At a cafe, At home, On the go            8",
+  "At the office, At a cafe, On the go            2",
+  "At the office, At home, At a cafe            60",
+  "At the office, At home, At a cafe, On the go            12",
+  "At the office, At home, On the go            29",
+  "At the office, None of these            1",
+  "At the office, On the go            12",
+  "At the office, On the go, At a cafe            3",
+  "At the office, On the go, At home            13",
+  "None of these            29",
+  "None of these, At a cafe            1",
+  "On the go            31",
+  "On the go, At a cafe            6",
+  "On the go, At a cafe, At home            7",
+  "On the go, At a cafe, At home, At the office            7",
+  "On the go, At a cafe, At the office            2",
+  "On the go, At a cafe, At the office, At home            34",
+  "On the go, At home, At a cafe            15",
+  "On the go, At home, At a cafe, At the office            5",
+  "On the go, At home, At the office            11",
+  "On the go, At home, At the office, At a cafe            4",
+  "On the go, At the office            7",
+  "On the go, At the office, At a cafe, At home            1",
+  "On the go, At the office, At home            14"
+)
+
+# Extracting specific counts
+extract_count <- function(data, location) {
+  pattern <- paste0("^", location, "\\s+([0-9]+)")
+  count <- grep(pattern, data, value = TRUE)
+  if (length(count) > 0) {
+    count <- as.numeric(sub(pattern, "\\1", count))
+  } else {
+    count <- 0
+  }
+  return(count)
+}
+
+# Example usage
+locations <- c("At a cafe", "At home", "At the office", "On the go", "None of these")
+loccounts <- sapply(locations, function(loc) extract_count(data, loc))
+plot_data <- data.frame(location = locations, count = loccounts)
+plot_data <- plot_data[order(plot_data$count, decreasing = TRUE), ]
+```
+
+## 4. Visualisasi
+```{r}
+sorted_counts <- loccounts[order(loccounts, decreasing = TRUE)]
+sorted_locations <- locations[order(loccounts, decreasing = TRUE)]
+
+barplot(sorted_counts, names.arg = sorted_locations, col = "skyblue", main = "Frequency of Locations", ylab = "Frequency") %>% +
+  coord_flip()
+```
+
+
+Agar lebih menarik untuk visualisasi mari kita gunakan ggplot
+```{r}
+plot_data <- data.frame(location = locations, count = loccounts)
+plot_data <- plot_data[order(plot_data$count, decreasing = TRUE), ]
+
+# Membuat plot menggunakan ggplot2
+ggplot(plot_data, aes(x = reorder(location, count), y = count, fill = location)) +
+  geom_bar(stat = "identity", color = "black") +
+  labs(title = "Frequency of Locations", x = NULL, y = "Frequency") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  coord_flip()+
+  scale_fill_brewer(palette = "Set1")
+```
+```{r}
+ggplot(data = oage, aes(x = reorder(age, total, .desc = TRUE), y = total, fill = age)) +
+  geom_bar(stat = "identity", color = "black") +
+  labs(title = "Distribution of Top 5 Age Groups",
+       x = NULL,
+       y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set3")
+```
+
+
+
+
+Berdasarkan recipe yang ada berikut ini visualisasi penikmatnya berdasarkan umur
+```{r}
+ggplot(agerecipe, aes(x = reorder(age, count), y = count, fill = age)) +
+  geom_col() +  geom_bar(stat = "identity", color = "black") +
+  labs(title = "Top 5 Ages with Highest Count", x = NULL, y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Set1")+
+  coord_flip()
+```
+
+
+***Berikut ini table resep terbaik***
+
+
+
+```{r echo=FALSE}
+datatable(allrecipe)
+```
+Mari kita siapkan visualisasinya berdasarkan group recipe
+
+```{r}
+allrecipe <- allrecipe %>%
+  mutate(group_recipe = paste0("Coffe Recipes", row_number()))
+allrecipe
+```
+
+```{r}
+ggplot(allrecipe, aes(x = reorder(group_recipe, count), y = count, fill = group_recipe)) +
+  geom_col(color = "black") +  # Menggunakan geom_col() untuk bar warna fill
+  labs(x = NULL, y = "Count", title = "Recipes by Group") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none") +  # Menghapus legend
+  coord_flip()
+```
+
+
+
+
+## 5. Conclusion
+Dari data diatas dapat kita simpulkan beberapa hal. Pertama konsumsi coffe tertinggi berada pada umur 25 - 34 tahun. Resep terbaik yaitu Pourover + Fruity + No - Just black + Medium + Light + Full caffeine, selain itu ada 4 lagi resep yang bisa kita rekomendasikan untuk dinikmati. Kita juga dapat menikmati coffe di tempat terbaik berdasarkan data diatas yaitu dirumah dengan 1558 responden yang memilih rumah sebagai tempat terbaiknya
+
+## 6. Table
+
+```{r echo=FALSE}
+datatable(Coffe1)
+```
+
+
+
+
